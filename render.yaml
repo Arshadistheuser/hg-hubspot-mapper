@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: hg-hubspot-mapper
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: HUBSPOT_ACCESS_TOKEN
+        sync: false
+      - key: PYTHON_VERSION
+        value: "3.12"

@@ -1,0 +1,124 @@
+/* HG Insights → HubSpot Mapper Styles */
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e5e7eb;
+}
+
+.card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 12px;
+}
+
+/* Drop zone */
+.drop-zone {
+    border: 2px dashed #d1d5db;
+    border-radius: 12px;
+    padding: 40px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.drop-zone:hover,
+.drop-zone.drag-over {
+    border-color: #3b82f6;
+    background-color: #eff6ff;
+}
+
+/* Status dot */
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.status-dot.connected {
+    background-color: #22c55e;
+}
+
+.status-dot.error {
+    background-color: #ef4444;
+}
+
+/* Stat cards */
+.stat-card {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+}
+
+.stat-card.stat-green {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+}
+
+.stat-card.stat-blue {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+}
+
+.stat-card.stat-red {
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+.stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-top: 4px;
+}
+
+/* Table styles */
+table th {
+    font-weight: 600;
+    color: #374151;
+}
+
+table td {
+    padding: 8px 12px;
+    border-top: 1px solid #f3f4f6;
+    color: #4b5563;
+}
+
+table tr:hover td {
+    background: #f9fafb;
+}
+
+/* Error reason cell */
+.reason-cell {
+    max-width: 300px;
+    word-wrap: break-word;
+    font-size: 0.8rem;
+    color: #dc2626;
+}
+
+/* Success row */
+.success-row td {
+    color: #15803d;
+}

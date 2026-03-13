@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HG Insights → HubSpot Mapper</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div>
+                <h1 class="text-xl font-bold text-gray-800">HG Insights → HubSpot Mapper</h1>
+                <p class="text-sm text-gray-500">Upload tech stack data · Match accounts · Update HubSpot</p>
+            </div>
+            <div id="connection-status" class="flex items-center gap-2 text-sm text-gray-400">
+                <span class="status-dot bg-gray-300"></span>
+                Checking connection...
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-6 py-8">
+
+        <!-- Step 1: Upload -->
+        <section id="upload-section" class="card">
+            <h2 class="card-title">1. Upload HG Insights File</h2>
+            <p class="text-sm text-gray-500 mb-4">
+                Upload an Excel (.xlsx) or CSV file with columns:
+                <strong>Company Name</strong>, <strong>Domain</strong>, <strong>Technology</strong>, <strong>Source</strong>
+            </p>
+
+            <div id="drop-zone" class="drop-zone">
+                <svg class="w-10 h-10 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
+                <p class="text-gray-600 font-medium">Drag & drop your file here</p>
+                <p class="text-gray-400 text-sm mt-1">or click to browse</p>
+                <input type="file" id="file-input" accept=".xlsx,.xls,.csv" class="hidden">
+            </div>
+
+            <div id="file-info" class="hidden mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="font-medium text-blue-800" id="file-name"></p>
+                        <p class="text-sm text-blue-600" id="file-records"></p>
+                    </div>
+                    <button id="process-btn" onclick="startProcessing()"
+                            class="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition">
+                        Process & Update HubSpot
+                    </button>
+                </div>
+            </div>
+
+            <div id="upload-error" class="hidden mt-4 p-4 bg-red-50 rounded-lg border border-red-200 text-red-700"></div>
+        </section>
+
+        <!-- Step 2: Progress -->
+        <section id="progress-section" class="card hidden">
+            <h2 class="card-title">2. Processing</h2>
+            <div class="mb-2 flex justify-between text-sm text-gray-600">
+                <span id="progress-text">Processing records...</span>
+                <span id="progress-pct">0%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-3">
+                <div id="progress-bar" class="bg-blue-600 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+        </section>
+
+        <!-- Step 3: Results -->
+        <section id="results-section" class="card hidden">
+            <h2 class="card-title">3. Results</h2>
+
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="stat-card">
+                    <p class="stat-label">Total Processed</p>
+                    <p class="stat-value" id="stat-total">0</p>
+                </div>
+                <div class="stat-card stat-green">
+                    <p class="stat-label">Matched</p>
+                    <p class="stat-value text-green-700" id="stat-matched">0</p>
+                </div>
+                <div class="stat-card stat-blue">
+                    <p class="stat-label">Updated</p>
+                    <p class="stat-value text-blue-700" id="stat-updated">0</p>
+                </div>
+                <div class="stat-card stat-red">
+                    <p class="stat-label">Failed</p>
+                    <p class="stat-value text-red-700" id="stat-failed">0</p>
+                </div>
+            </div>
+
+            <!-- Error Table -->
+            <div id="errors-container" class="hidden">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-semibold text-gray-700">Errors & Unmatched Records</h3>
+                    <button id="download-errors-btn" onclick="downloadErrors()"
+                            class="px-4 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 text-sm font-medium transition">
+                        Download Error Report
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm border border-gray-200 rounded-lg">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-3 py-2 text-left">Row</th>
+                                <th class="px-3 py-2 text-left">Company</th>
+                                <th class="px-3 py-2 text-left">Domain</th>
+                                <th class="px-3 py-2 text-left">Technology</th>
+                                <th class="px-3 py-2 text-left">Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody id="errors-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Success Table -->
+            <div id="success-container" class="hidden mt-6">
+                <h3 class="font-semibold text-gray-700 mb-3">Successfully Updated</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm border border-gray-200 rounded-lg">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-3 py-2 text-left">Row</th>
+                                <th class="px-3 py-2 text-left">Company (Excel)</th>
+                                <th class="px-3 py-2 text-left">Domain</th>
+                                <th class="px-3 py-2 text-left">Technology</th>
+                                <th class="px-3 py-2 text-left">HubSpot Company</th>
+                            </tr>
+                        </thead>
+                        <tbody id="success-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Start Over -->
+            <div class="mt-6 text-center">
+                <button onclick="resetApp()" class="px-5 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition">
+                    Upload Another File
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
