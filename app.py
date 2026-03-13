@@ -95,6 +95,21 @@ async def tech_stack_info():
         return JSONResponse(status_code=400, content={"error": str(e)})
 
 
+@app.get("/api/validate-properties")
+async def validate_properties():
+    """Validate that all required HubSpot properties exist and are accessible."""
+    hs = get_hubspot_client()
+    try:
+        results = await hs.validate_properties()
+        all_connected = all(r["status"] == "connected" for r in results.values())
+        return {
+            "status": "ok" if all_connected else "partial",
+            "properties": results,
+        }
+    except Exception as e:
+        return JSONResponse(status_code=400, content={"error": str(e)})
+
+
 # ------------------------------------------------------------------ #
 #  API: Upload & process
 # ------------------------------------------------------------------ #
@@ -364,11 +379,22 @@ async def _process_single_record(
 
     company = companies[0]
     company_id = company["id"]
-    current_tech = company.get("properties", {}).get("tech_stack", "")
+    props = company.get("properties", {})
+    current_tech = props.get("tech_stack", "")
+    current_data_source = props.get("data_source_tool", "")
 
-    # 4. Update the tech stack
+    # 4. Update tech_stack, company_name___lead_gen, and data_source_tool
+    source_value = rec.source if rec.source else "HG Insights"
     try:
-        await hs.update_tech_stack(company_id, rec.technology, field_type, current_tech)
+        await hs.update_company_properties(
+            company_id=company_id,
+            tech_value=rec.technology,
+            tech_field_type=field_type,
+            current_tech=current_tech,
+            company_name=rec.company_name,
+            source=source_value,
+            current_data_source=current_data_source,
+        )
     except Exception as e:
         return {**base, "status": "error", "reason": f"Failed to update: {str(e)}"}
 

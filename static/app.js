@@ -105,8 +105,9 @@ async function uploadFile(file) {
         document.getElementById("file-records").textContent = `${data.total_records} records found`;
         infoEl.classList.remove("hidden");
 
-        // Show mapping reference and preview
+        // Show mapping reference, validate properties, and preview
         document.getElementById("mapping-section").classList.remove("hidden");
+        validateProperties();
         showPreview(data.preview, data.total_records);
     } catch (err) {
         errorEl.textContent = "Failed to upload file: " + err.message;
@@ -354,6 +355,60 @@ function resetApp() {
 // ------------------------------------------------------------------ //
 //  Helpers
 // ------------------------------------------------------------------ //
+
+// ------------------------------------------------------------------ //
+//  Property Validation
+// ------------------------------------------------------------------ //
+
+async function validateProperties() {
+    const loading = document.getElementById("validation-loading");
+    const results = document.getElementById("validation-results");
+    loading.classList.remove("hidden");
+    results.classList.add("hidden");
+
+    try {
+        const resp = await fetch("/api/validate-properties");
+        const data = await resp.json();
+
+        if (data.error) {
+            loading.classList.add("hidden");
+            results.classList.remove("hidden");
+            results.innerHTML = `<p class="text-red-600 text-sm">Failed to validate: ${esc(data.error)}</p>`;
+            return;
+        }
+
+        loading.classList.add("hidden");
+        results.classList.remove("hidden");
+
+        let html = '<div class="space-y-1">';
+        const props = data.properties || {};
+        for (const [key, info] of Object.entries(props)) {
+            const isOk = info.status === "connected";
+            const dot = isOk
+                ? '<span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-2"></span>'
+                : '<span class="inline-block w-2 h-2 rounded-full bg-red-500 mr-2"></span>';
+            const status = isOk
+                ? `<span class="text-green-700">Connected</span> — ${esc(info.fieldType)} field`
+                : `<span class="text-red-700">Error</span> — ${esc(info.error || "Not accessible")}`;
+            html += `<div class="text-sm flex items-center">${dot}<strong>${esc(info.excel_column)}</strong> → <strong>${esc(info.label)}</strong>: ${status}</div>`;
+        }
+        html += "</div>";
+
+        const allOk = Object.values(props).every((p) => p.status === "connected");
+        const container = document.getElementById("property-validation");
+        if (allOk) {
+            container.className = "mt-4 p-4 rounded-lg border border-green-200 bg-green-50";
+        } else {
+            container.className = "mt-4 p-4 rounded-lg border border-red-200 bg-red-50";
+        }
+
+        results.innerHTML = html;
+    } catch (err) {
+        loading.classList.add("hidden");
+        results.classList.remove("hidden");
+        results.innerHTML = `<p class="text-red-600 text-sm">Failed to validate: ${esc(err.message)}</p>`;
+    }
+}
 
 function esc(str) {
     if (str === null || str === undefined) return "";

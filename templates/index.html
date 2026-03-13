@@ -81,17 +81,29 @@
                         <tr>
                             <td class="px-4 py-2 font-medium text-blue-700">Company Name</td>
                             <td class="px-4 py-2 text-center text-gray-400">→</td>
-                            <td class="px-4 py-2 text-gray-400 italic">Not mapped</td>
-                            <td class="px-4 py-2 text-gray-500">Used for display/logging only</td>
+                            <td class="px-4 py-2 font-medium text-green-700">Company Name - Lead Gen</td>
+                            <td class="px-4 py-2 text-gray-500">Updates the lead gen company name field</td>
                         </tr>
                         <tr class="bg-gray-50">
                             <td class="px-4 py-2 font-medium text-blue-700">Source</td>
                             <td class="px-4 py-2 text-center text-gray-400">→</td>
-                            <td class="px-4 py-2 text-gray-400 italic">Not mapped</td>
-                            <td class="px-4 py-2 text-gray-500">Reference only (HG Insights)</td>
+                            <td class="px-4 py-2 font-medium text-green-700">Data Source Tool</td>
+                            <td class="px-4 py-2 text-gray-500">Records the data source (e.g. HG Insights)</td>
                         </tr>
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Property Validation Status -->
+            <div id="property-validation" class="mt-4 p-4 rounded-lg border">
+                <div class="flex items-center gap-2 mb-2">
+                    <h3 class="font-semibold text-gray-700 text-sm">Property Connection Status</h3>
+                    <button onclick="validateProperties()" class="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition">
+                        Re-check
+                    </button>
+                </div>
+                <div id="validation-loading" class="text-sm text-gray-400">Verifying HubSpot property connections...</div>
+                <div id="validation-results" class="hidden"></div>
             </div>
         </section>
 
