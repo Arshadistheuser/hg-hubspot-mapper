@@ -6,11 +6,12 @@ Handles variations like:
   http://www.example.com/path, EXAMPLE.COM, etc.
 """
 
+from typing import Optional
 from urllib.parse import urlparse
 import re
 
 
-def normalize_domain(raw: str) -> str | None:
+def normalize_domain(raw: str) -> Optional[str]:
     """
     Normalize a domain/URL string to a bare domain (no scheme, no www, no path).
 
@@ -51,7 +52,7 @@ def normalize_domain(raw: str) -> str | None:
     return domain
 
 
-def domains_match(domain_a: str | None, domain_b: str | None) -> bool:
+def domains_match(domain_a: Optional[str], domain_b: Optional[str]) -> bool:
     """Compare two domains after normalization."""
     if domain_a is None or domain_b is None:
         return False

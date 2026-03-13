@@ -3,6 +3,7 @@ HG Insights → HubSpot Tech Stack Mapper
 FastAPI application.
 """
 
+from typing import Dict, List, Set
 import os
 import uuid
 import json
@@ -32,7 +33,7 @@ UPLOAD_DIR = BASE_DIR / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
 
 # In-memory job store (sufficient for single-user / on-demand usage)
-jobs: dict[str, dict] = {}
+jobs: Dict[str, dict] = {}
 
 
 def get_hubspot_client() -> HubSpotClient:
@@ -221,8 +222,8 @@ async def _process_records(job_id: str):
     matched = 0
     updated = 0
     failed = 0
-    errors: list[dict] = []
-    successes: list[dict] = []
+    errors: List[dict] = []
+    successes: List[dict] = []
 
     for i, rec in enumerate(records):
         try:
@@ -269,7 +270,7 @@ async def _process_single_record(
     hs: HubSpotClient,
     rec: HGRecord,
     field_type: str,
-    valid_values: set[str],
+    valid_values: Set[str],
 ) -> dict:
     """Process one HG Insights record against HubSpot."""
     base = {

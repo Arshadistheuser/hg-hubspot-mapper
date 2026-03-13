@@ -7,6 +7,7 @@ Required scopes on your HubSpot Private App:
   - crm.schemas.companies.read
 """
 
+from typing import Optional, Set, List
 import httpx
 from domain_utils import normalize_domain
 
@@ -36,7 +37,7 @@ class HubSpotClient:
             resp.raise_for_status()
             return resp.json()
 
-    async def get_valid_tech_stack_values(self) -> set[str]:
+    async def get_valid_tech_stack_values(self) -> Set[str]:
         """Return the set of allowed dropdown/enum values (lowercased for comparison)."""
         prop = await self.get_tech_stack_property()
         options = prop.get("options", [])
@@ -51,7 +52,7 @@ class HubSpotClient:
     #  Company search by domain
     # ------------------------------------------------------------------ #
 
-    async def search_company_by_domain(self, domain: str) -> list[dict]:
+    async def search_company_by_domain(self, domain: str) -> List[dict]:
         """
         Search HubSpot companies whose 'domain' or 'website' contains
         the normalized domain. Returns a list of matching company records.
@@ -112,7 +113,7 @@ class HubSpotClient:
     # ------------------------------------------------------------------ #
 
     async def update_tech_stack(
-        self, company_id: str, tech_value: str, field_type: str, current_value: str | None = None
+        self, company_id: str, tech_value: str, field_type: str, current_value: Optional[str] = None
     ) -> dict:
         """
         Update the tech_stack property on a company.

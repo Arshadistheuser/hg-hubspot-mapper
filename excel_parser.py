@@ -5,6 +5,7 @@ Expected columns (case-insensitive matching):
   Company Name | Domain | Technology | Source
 """
 
+from typing import Dict, List, Union
 from pathlib import Path
 from dataclasses import dataclass
 import openpyxl
@@ -32,13 +33,13 @@ COLUMN_ALIASES = {
 }
 
 
-def _find_columns(headers: list[str]) -> dict[str, int]:
+def _find_columns(headers: List[str]) -> Dict[str, int]:
     """
     Match spreadsheet headers to our expected columns.
     Returns a dict like {"company_name": 0, "domain": 1, ...}.
     """
     lower_headers = [h.strip().lower() if h else "" for h in headers]
-    mapping: dict[str, int] = {}
+    mapping: Dict[str, int] = {}
 
     for field, aliases in COLUMN_ALIASES.items():
         for idx, h in enumerate(lower_headers):
@@ -58,7 +59,7 @@ def _find_columns(headers: list[str]) -> dict[str, int]:
     return mapping
 
 
-def parse_excel(file_path: str | Path) -> list[HGRecord]:
+def parse_excel(file_path: Union[str, Path]) -> List[HGRecord]:
     """Parse an Excel (.xlsx) file and return a list of HGRecords."""
     wb = openpyxl.load_workbook(file_path, read_only=True, data_only=True)
     ws = wb.active
@@ -72,7 +73,7 @@ def parse_excel(file_path: str | Path) -> list[HGRecord]:
     headers = [str(cell) if cell else "" for cell in rows[0]]
     col_map = _find_columns(headers)
 
-    records: list[HGRecord] = []
+    records: List[HGRecord] = []
     for i, row in enumerate(rows[1:], start=2):
         cells = list(row)
 
@@ -100,7 +101,7 @@ def parse_excel(file_path: str | Path) -> list[HGRecord]:
     return records
 
 
-def parse_csv(file_path: str | Path) -> list[HGRecord]:
+def parse_csv(file_path: Union[str, Path]) -> List[HGRecord]:
     """Parse a CSV file and return a list of HGRecords."""
     import csv
 
@@ -114,7 +115,7 @@ def parse_csv(file_path: str | Path) -> list[HGRecord]:
     headers = rows[0]
     col_map = _find_columns(headers)
 
-    records: list[HGRecord] = []
+    records: List[HGRecord] = []
     for i, row in enumerate(rows[1:], start=2):
         if not row:
             continue
@@ -142,7 +143,7 @@ def parse_csv(file_path: str | Path) -> list[HGRecord]:
     return records
 
 
-def parse_file(file_path: str | Path) -> list[HGRecord]:
+def parse_file(file_path: Union[str, Path]) -> List[HGRecord]:
     """Auto-detect file type and parse."""
     path = Path(file_path)
     ext = path.suffix.lower()
