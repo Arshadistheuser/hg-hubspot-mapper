@@ -119,6 +119,9 @@ async def upload_file(file: UploadFile = File(...)):
     except ParseError as e:
         file_path.unlink(missing_ok=True)
         raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        file_path.unlink(missing_ok=True)
+        raise HTTPException(status_code=400, detail=f"Failed to parse file: {str(e)}")
 
     jobs[job_id] = {
         "id": job_id,

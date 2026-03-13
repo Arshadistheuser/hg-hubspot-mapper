@@ -105,9 +105,19 @@ def parse_csv(file_path: Union[str, Path]) -> List[HGRecord]:
     """Parse a CSV file and return a list of HGRecords."""
     import csv
 
-    with open(file_path, newline="", encoding="utf-8-sig") as f:
-        reader = csv.reader(f)
-        rows = list(reader)
+    # Try multiple encodings — HG Insights exports may use various formats
+    rows = None
+    for encoding in ("utf-8-sig", "utf-8", "latin-1", "cp1252"):
+        try:
+            with open(file_path, newline="", encoding=encoding) as f:
+                reader = csv.reader(f)
+                rows = list(reader)
+            break
+        except (UnicodeDecodeError, UnicodeError):
+            continue
+
+    if rows is None:
+        raise ParseError("Could not decode the CSV file. Please save it as UTF-8 and try again.")
 
     if not rows:
         raise ParseError("The uploaded file is empty.")
