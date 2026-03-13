@@ -1,6 +1,7 @@
 // HG Insights → HubSpot Mapper — Frontend Logic
 
 let currentJobId = null;
+let currentTotalRecords = 0;
 let pollInterval = null;
 
 // ------------------------------------------------------------------ //
@@ -75,6 +76,7 @@ async function uploadFile(file) {
     errorEl.classList.add("hidden");
     infoEl.classList.add("hidden");
     document.getElementById("preview-section").classList.add("hidden");
+    document.getElementById("mapping-section").classList.add("hidden");
 
     const formData = new FormData();
     formData.append("file", file);
@@ -98,11 +100,13 @@ async function uploadFile(file) {
         }
 
         currentJobId = data.job_id;
+        currentTotalRecords = data.total_records;
         document.getElementById("file-name").textContent = data.filename;
         document.getElementById("file-records").textContent = `${data.total_records} records found`;
         infoEl.classList.remove("hidden");
 
-        // Show preview
+        // Show mapping reference and preview
+        document.getElementById("mapping-section").classList.remove("hidden");
         showPreview(data.preview, data.total_records);
     } catch (err) {
         errorEl.textContent = "Failed to upload file: " + err.message;
@@ -111,7 +115,7 @@ async function uploadFile(file) {
 }
 
 // ------------------------------------------------------------------ //
-//  Preview
+//  Preview with Checkboxes
 // ------------------------------------------------------------------ //
 
 function showPreview(preview, totalRecords) {
@@ -124,6 +128,9 @@ function showPreview(preview, totalRecords) {
     preview.forEach((rec) => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
+            <td class="px-3 py-1.5 text-center">
+                <input type="checkbox" class="row-checkbox" data-row="${rec.row}" onchange="updateSelectedCount()">
+            </td>
             <td class="px-3 py-1.5">${esc(rec.row)}</td>
             <td class="px-3 py-1.5">${esc(rec.company)}</td>
             <td class="px-3 py-1.5">${esc(rec.domain)}</td>
@@ -134,9 +141,40 @@ function showPreview(preview, totalRecords) {
     });
 
     const showing = Math.min(preview.length, 50);
-    countEl.textContent = `Showing ${showing} of ${totalRecords} records`;
+    countEl.textContent = `Showing ${showing} of ${totalRecords} total`;
+
+    // Reset select-all and counts
+    document.getElementById("select-all").checked = false;
+    updateSelectedCount();
 
     section.classList.remove("hidden");
+}
+
+function toggleSelectAll(checkbox) {
+    const checkboxes = document.querySelectorAll(".row-checkbox");
+    checkboxes.forEach((cb) => { cb.checked = checkbox.checked; });
+    updateSelectedCount();
+}
+
+function updateSelectedCount() {
+    const checked = document.querySelectorAll(".row-checkbox:checked");
+    const count = checked.length;
+    const el = document.getElementById("selected-count");
+    const btn = document.getElementById("approve-btn");
+
+    el.textContent = `${count} selected`;
+
+    if (count > 0) {
+        btn.disabled = false;
+        if (count === currentTotalRecords || (count === document.querySelectorAll(".row-checkbox").length && currentTotalRecords > 50)) {
+            btn.textContent = `Approve & Update All ${currentTotalRecords} Records`;
+        } else {
+            btn.textContent = `Approve & Update ${count} Selected`;
+        }
+    } else {
+        btn.disabled = true;
+        btn.textContent = "Select records to update";
+    }
 }
 
 // ------------------------------------------------------------------ //
@@ -149,21 +187,39 @@ async function approveAndProcess() {
     const btn = document.getElementById("approve-btn");
     btn.disabled = true;
     btn.textContent = "Starting...";
-    btn.classList.add("opacity-50");
+
+    // Collect selected row numbers
+    const checked = document.querySelectorAll(".row-checkbox:checked");
+    const allCheckboxes = document.querySelectorAll(".row-checkbox");
+    const selectAll = checked.length === allCheckboxes.length;
+
+    // If all preview rows are checked AND there are more records beyond preview,
+    // send null (process all). Otherwise send specific row numbers.
+    let selectedRows = null;
+    if (!selectAll || currentTotalRecords === checked.length) {
+        // Send specific rows only when not all are selected
+        if (!selectAll) {
+            selectedRows = Array.from(checked).map((cb) => parseInt(cb.dataset.row));
+        }
+    }
 
     try {
-        const resp = await fetch(`/api/process/${currentJobId}`, { method: "POST" });
+        const resp = await fetch(`/api/process/${currentJobId}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ selected_rows: selectedRows }),
+        });
         if (!resp.ok) {
             const data = await resp.json();
             alert(data.detail || "Failed to start processing");
             btn.disabled = false;
-            btn.textContent = "Approve & Update HubSpot";
-            btn.classList.remove("opacity-50");
+            updateSelectedCount();
             return;
         }
 
-        // Hide preview, show progress
+        // Hide preview & mapping, show progress
         document.getElementById("preview-section").classList.add("hidden");
+        document.getElementById("mapping-section").classList.add("hidden");
         document.getElementById("progress-section").classList.remove("hidden");
 
         // Start polling
@@ -171,8 +227,7 @@ async function approveAndProcess() {
     } catch (err) {
         alert("Error: " + err.message);
         btn.disabled = false;
-        btn.textContent = "Approve & Update HubSpot";
-        btn.classList.remove("opacity-50");
+        updateSelectedCount();
     }
 }
 
@@ -278,10 +333,12 @@ function downloadErrors() {
 
 function resetApp() {
     currentJobId = null;
+    currentTotalRecords = 0;
     if (pollInterval) clearInterval(pollInterval);
 
     document.getElementById("file-info").classList.add("hidden");
     document.getElementById("upload-error").classList.add("hidden");
+    document.getElementById("mapping-section").classList.add("hidden");
     document.getElementById("preview-section").classList.add("hidden");
     document.getElementById("progress-section").classList.add("hidden");
     document.getElementById("results-section").classList.add("hidden");
@@ -290,11 +347,6 @@ function resetApp() {
 
     document.getElementById("progress-bar").style.width = "0%";
     document.getElementById("progress-pct").textContent = "0%";
-
-    const btn = document.getElementById("approve-btn");
-    btn.disabled = false;
-    btn.textContent = "Approve & Update HubSpot";
-    btn.classList.remove("opacity-50");
 
     document.getElementById("file-input").value = "";
 }

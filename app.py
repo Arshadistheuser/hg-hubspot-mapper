@@ -154,8 +154,8 @@ async def upload_file(file: UploadFile = File(...)):
 
 
 @app.post("/api/process/{job_id}")
-async def process_job(job_id: str):
-    """Start processing a previously uploaded file."""
+async def process_job(job_id: str, request: Request):
+    """Start processing a previously uploaded file. Optionally accepts selected row numbers."""
     if job_id not in jobs:
         raise HTTPException(status_code=404, detail="Job not found")
 
@@ -163,8 +163,17 @@ async def process_job(job_id: str):
     if job["status"] == "processing":
         raise HTTPException(status_code=409, detail="Job is already processing")
 
+    # Parse optional selected_rows from request body
+    selected_rows = None
+    try:
+        body = await request.json()
+        selected_rows = body.get("selected_rows")
+    except Exception:
+        pass
+
     job["status"] = "processing"
     job["progress"] = 0
+    job["selected_rows"] = selected_rows
 
     # Run processing in background
     asyncio.create_task(_process_records(job_id))
@@ -233,7 +242,16 @@ async def _process_records(job_id: str):
     job = jobs[job_id]
     hs = HubSpotClient(os.getenv("HUBSPOT_ACCESS_TOKEN", ""))
 
-    records = parse_file(job["file_path"])
+    all_records = parse_file(job["file_path"])
+
+    # Filter to selected rows if specified
+    selected_rows = job.get("selected_rows")
+    if selected_rows:
+        selected_set = set(selected_rows)
+        records = [r for r in all_records if r.row_number in selected_set]
+    else:
+        records = all_records
+
     total = len(records)
 
     # Fetch tech stack property info once

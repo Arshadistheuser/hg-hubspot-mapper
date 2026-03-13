@@ -51,24 +51,71 @@
             <div id="upload-error" class="hidden mt-4 p-4 bg-red-50 rounded-lg border border-red-200 text-red-700"></div>
         </section>
 
+        <!-- Column Mapping Reference -->
+        <section id="mapping-section" class="card hidden">
+            <h2 class="card-title">Column Mapping: Excel → HubSpot</h2>
+            <p class="text-xs text-gray-400 mb-3">This shows how each column in your Excel file maps to HubSpot Company properties.</p>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm border border-gray-200 rounded-lg">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-4 py-2 text-left">Excel Column</th>
+                            <th class="px-4 py-2 text-center">→</th>
+                            <th class="px-4 py-2 text-left">HubSpot Property</th>
+                            <th class="px-4 py-2 text-left">Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="px-4 py-2 font-medium text-blue-700">Domain</td>
+                            <td class="px-4 py-2 text-center text-gray-400">→</td>
+                            <td class="px-4 py-2 font-medium text-green-700">Website URL</td>
+                            <td class="px-4 py-2 text-gray-500">Primary key for matching companies</td>
+                        </tr>
+                        <tr class="bg-gray-50">
+                            <td class="px-4 py-2 font-medium text-blue-700">Technology</td>
+                            <td class="px-4 py-2 text-center text-gray-400">→</td>
+                            <td class="px-4 py-2 font-medium text-green-700">Tech Stack</td>
+                            <td class="px-4 py-2 text-gray-500">Value to be updated on the matched company</td>
+                        </tr>
+                        <tr>
+                            <td class="px-4 py-2 font-medium text-blue-700">Company Name</td>
+                            <td class="px-4 py-2 text-center text-gray-400">→</td>
+                            <td class="px-4 py-2 text-gray-400 italic">Not mapped</td>
+                            <td class="px-4 py-2 text-gray-500">Used for display/logging only</td>
+                        </tr>
+                        <tr class="bg-gray-50">
+                            <td class="px-4 py-2 font-medium text-blue-700">Source</td>
+                            <td class="px-4 py-2 text-center text-gray-400">→</td>
+                            <td class="px-4 py-2 text-gray-400 italic">Not mapped</td>
+                            <td class="px-4 py-2 text-gray-500">Reference only (HG Insights)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
         <!-- Step 2: Preview & Approve -->
         <section id="preview-section" class="card hidden">
-            <h2 class="card-title">2. Review Data Preview</h2>
+            <h2 class="card-title">2. Review Data & Select Records</h2>
             <p class="text-sm text-gray-500 mb-1">
-                Showing first <strong>50 records</strong>. Review the data below before proceeding.
+                Showing first <strong>50 records</strong>. Use checkboxes to select which records to process.
             </p>
             <p class="text-xs text-gray-400 mb-4">
-                Matching uses the <strong>Website URL</strong> property in HubSpot as the primary identifier.
+                Tip: Select a few records first to test, then come back and process all.
             </p>
 
             <div class="overflow-x-auto border border-gray-200 rounded-lg" style="max-height: 420px; overflow-y: auto;">
                 <table class="w-full text-sm">
                     <thead class="bg-gray-100 sticky top-0">
                         <tr>
+                            <th class="px-3 py-2 text-center" style="width: 40px;">
+                                <input type="checkbox" id="select-all" onchange="toggleSelectAll(this)" title="Select/Deselect All">
+                            </th>
                             <th class="px-3 py-2 text-left">Row</th>
                             <th class="px-3 py-2 text-left">Company Name</th>
-                            <th class="px-3 py-2 text-left">Domain</th>
-                            <th class="px-3 py-2 text-left">Technology</th>
+                            <th class="px-3 py-2 text-left">Domain → <span class="text-green-600">Website URL</span></th>
+                            <th class="px-3 py-2 text-left">Technology → <span class="text-green-600">Tech Stack</span></th>
                             <th class="px-3 py-2 text-left">Source</th>
                         </tr>
                     </thead>
@@ -82,9 +129,10 @@
                 </button>
                 <div class="flex items-center gap-3">
                     <p class="text-sm text-gray-500" id="preview-count"></p>
-                    <button id="approve-btn" onclick="approveAndProcess()"
-                            class="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold transition shadow-sm">
-                        Approve & Update HubSpot
+                    <p class="text-sm font-medium text-blue-700" id="selected-count">0 selected</p>
+                    <button id="approve-btn" onclick="approveAndProcess()" disabled
+                            class="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold transition shadow-sm disabled:opacity-40 disabled:cursor-not-allowed">
+                        Approve & Update Selected
                     </button>
                 </div>
             </div>
