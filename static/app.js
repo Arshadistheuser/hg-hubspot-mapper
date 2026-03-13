@@ -80,7 +80,15 @@ async function uploadFile(file) {
 
     try {
         const resp = await fetch("/api/upload", { method: "POST", body: formData });
-        const data = await resp.json();
+        const text = await resp.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch {
+            errorEl.textContent = "Server error: " + text.substring(0, 200);
+            errorEl.classList.remove("hidden");
+            return;
+        }
 
         if (!resp.ok) {
             errorEl.textContent = data.detail || "Upload failed";

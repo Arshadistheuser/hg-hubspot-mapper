@@ -8,6 +8,8 @@ import os
 import uuid
 import json
 import asyncio
+import tempfile
+import traceback
 from datetime import datetime
 from pathlib import Path
 
@@ -29,11 +31,20 @@ BASE_DIR = Path(__file__).parent
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
 
-UPLOAD_DIR = BASE_DIR / "uploads"
+UPLOAD_DIR = Path(tempfile.gettempdir()) / "hg-hubspot-uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
 
 # In-memory job store (sufficient for single-user / on-demand usage)
 jobs: Dict[str, dict] = {}
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Ensure all errors return JSON, not HTML."""
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc), "traceback": traceback.format_exc()},
+    )
 
 
 def get_hubspot_client() -> HubSpotClient:
