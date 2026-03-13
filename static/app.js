@@ -74,6 +74,7 @@ async function uploadFile(file) {
     const infoEl = document.getElementById("file-info");
     errorEl.classList.add("hidden");
     infoEl.classList.add("hidden");
+    document.getElementById("preview-section").classList.add("hidden");
 
     const formData = new FormData();
     formData.append("file", file);
@@ -100,6 +101,9 @@ async function uploadFile(file) {
         document.getElementById("file-name").textContent = data.filename;
         document.getElementById("file-records").textContent = `${data.total_records} records found`;
         infoEl.classList.remove("hidden");
+
+        // Show preview
+        showPreview(data.preview, data.total_records);
     } catch (err) {
         errorEl.textContent = "Failed to upload file: " + err.message;
         errorEl.classList.remove("hidden");
@@ -107,13 +111,42 @@ async function uploadFile(file) {
 }
 
 // ------------------------------------------------------------------ //
-//  Process
+//  Preview
 // ------------------------------------------------------------------ //
 
-async function startProcessing() {
+function showPreview(preview, totalRecords) {
+    const section = document.getElementById("preview-section");
+    const tbody = document.getElementById("preview-tbody");
+    const countEl = document.getElementById("preview-count");
+
+    tbody.innerHTML = "";
+
+    preview.forEach((rec) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td class="px-3 py-1.5">${esc(rec.row)}</td>
+            <td class="px-3 py-1.5">${esc(rec.company)}</td>
+            <td class="px-3 py-1.5">${esc(rec.domain)}</td>
+            <td class="px-3 py-1.5">${esc(rec.technology)}</td>
+            <td class="px-3 py-1.5">${esc(rec.source)}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    const showing = Math.min(preview.length, 50);
+    countEl.textContent = `Showing ${showing} of ${totalRecords} records`;
+
+    section.classList.remove("hidden");
+}
+
+// ------------------------------------------------------------------ //
+//  Approve & Process
+// ------------------------------------------------------------------ //
+
+async function approveAndProcess() {
     if (!currentJobId) return;
 
-    const btn = document.getElementById("process-btn");
+    const btn = document.getElementById("approve-btn");
     btn.disabled = true;
     btn.textContent = "Starting...";
     btn.classList.add("opacity-50");
@@ -124,12 +157,13 @@ async function startProcessing() {
             const data = await resp.json();
             alert(data.detail || "Failed to start processing");
             btn.disabled = false;
-            btn.textContent = "Process & Update HubSpot";
+            btn.textContent = "Approve & Update HubSpot";
             btn.classList.remove("opacity-50");
             return;
         }
 
-        // Show progress section
+        // Hide preview, show progress
+        document.getElementById("preview-section").classList.add("hidden");
         document.getElementById("progress-section").classList.remove("hidden");
 
         // Start polling
@@ -137,7 +171,7 @@ async function startProcessing() {
     } catch (err) {
         alert("Error: " + err.message);
         btn.disabled = false;
-        btn.textContent = "Process & Update HubSpot";
+        btn.textContent = "Approve & Update HubSpot";
         btn.classList.remove("opacity-50");
     }
 }
@@ -149,7 +183,6 @@ async function pollStatus() {
         const resp = await fetch(`/api/status/${currentJobId}`);
         const data = await resp.json();
 
-        // Update progress bar
         const pct = data.progress || 0;
         document.getElementById("progress-bar").style.width = pct + "%";
         document.getElementById("progress-pct").textContent = pct + "%";
@@ -183,7 +216,6 @@ function showResults(results) {
         return;
     }
 
-    // Stats
     document.getElementById("stat-total").textContent = results.total_processed;
     document.getElementById("stat-matched").textContent = results.accounts_matched;
     document.getElementById("stat-updated").textContent = results.accounts_updated;
@@ -250,6 +282,7 @@ function resetApp() {
 
     document.getElementById("file-info").classList.add("hidden");
     document.getElementById("upload-error").classList.add("hidden");
+    document.getElementById("preview-section").classList.add("hidden");
     document.getElementById("progress-section").classList.add("hidden");
     document.getElementById("results-section").classList.add("hidden");
     document.getElementById("errors-container").classList.add("hidden");
@@ -258,9 +291,9 @@ function resetApp() {
     document.getElementById("progress-bar").style.width = "0%";
     document.getElementById("progress-pct").textContent = "0%";
 
-    const btn = document.getElementById("process-btn");
+    const btn = document.getElementById("approve-btn");
     btn.disabled = false;
-    btn.textContent = "Process & Update HubSpot";
+    btn.textContent = "Approve & Update HubSpot";
     btn.classList.remove("opacity-50");
 
     document.getElementById("file-input").value = "";

@@ -123,6 +123,17 @@ async def upload_file(file: UploadFile = File(...)):
         file_path.unlink(missing_ok=True)
         raise HTTPException(status_code=400, detail=f"Failed to parse file: {str(e)}")
 
+    # Build preview of first 50 records
+    preview = []
+    for rec in records[:50]:
+        preview.append({
+            "row": rec.row_number,
+            "company": rec.company_name,
+            "domain": rec.domain,
+            "technology": rec.technology,
+            "source": rec.source,
+        })
+
     jobs[job_id] = {
         "id": job_id,
         "filename": file.filename,
@@ -138,6 +149,7 @@ async def upload_file(file: UploadFile = File(...)):
         "job_id": job_id,
         "filename": file.filename,
         "total_records": len(records),
+        "preview": preview,
     }
 
 

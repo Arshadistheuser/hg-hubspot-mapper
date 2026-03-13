@@ -54,11 +54,10 @@ class HubSpotClient:
 
     async def search_company_by_domain(self, domain: str) -> List[dict]:
         """
-        Search HubSpot companies whose 'domain' or 'website' contains
-        the normalized domain. Returns a list of matching company records.
+        Search HubSpot companies using the Website URL property as the
+        primary identifier. Also checks the domain property as fallback.
 
-        HubSpot stores domains in the 'domain' property (primary) and
-        sometimes in 'website'. We search both using filter groups (OR).
+        Handles URL variations: www.example.com, example.com, https://example.com
         """
         normalized = normalize_domain(domain)
         if not normalized:
@@ -66,14 +65,23 @@ class HubSpotClient:
 
         url = f"{BASE_URL}/crm/v3/objects/companies/search"
 
-        # Search with CONTAINS_TOKEN on domain property and also
-        # use EQ for exact match — HubSpot domain field stores bare domains
+        # Website URL is the primary match field.
+        # Search multiple variations to handle different URL formats stored in HubSpot.
         payload = {
             "filterGroups": [
                 {
                     "filters": [
                         {
-                            "propertyName": "domain",
+                            "propertyName": "website",
+                            "operator": "CONTAINS_TOKEN",
+                            "value": normalized,
+                        }
+                    ]
+                },
+                {
+                    "filters": [
+                        {
+                            "propertyName": "website",
                             "operator": "EQ",
                             "value": normalized,
                         }
@@ -82,7 +90,7 @@ class HubSpotClient:
                 {
                     "filters": [
                         {
-                            "propertyName": "domain",
+                            "propertyName": "website",
                             "operator": "EQ",
                             "value": f"www.{normalized}",
                         }
@@ -92,8 +100,17 @@ class HubSpotClient:
                     "filters": [
                         {
                             "propertyName": "website",
-                            "operator": "CONTAINS_TOKEN",
-                            "value": normalized,
+                            "operator": "EQ",
+                            "value": f"https://{normalized}",
+                        }
+                    ]
+                },
+                {
+                    "filters": [
+                        {
+                            "propertyName": "website",
+                            "operator": "EQ",
+                            "value": f"https://www.{normalized}",
                         }
                     ]
                 },
@@ -106,7 +123,30 @@ class HubSpotClient:
             resp = await client.post(url, headers=self.headers, json=payload)
             resp.raise_for_status()
             data = resp.json()
-            return data.get("results", [])
+            results = data.get("results", [])
+
+            # If no match on website, fallback to domain property
+            if not results:
+                fallback_payload = {
+                    "filterGroups": [
+                        {
+                            "filters": [
+                                {
+                                    "propertyName": "domain",
+                                    "operator": "EQ",
+                                    "value": normalized,
+                                }
+                            ]
+                        },
+                    ],
+                    "properties": ["name", "domain", "website", "tech_stack"],
+                    "limit": 10,
+                }
+                resp2 = await client.post(url, headers=self.headers, json=fallback_payload)
+                resp2.raise_for_status()
+                results = resp2.json().get("results", [])
+
+            return results
 
     # ------------------------------------------------------------------ #
     #  Update tech stack
