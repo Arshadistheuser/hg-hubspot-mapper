@@ -153,13 +153,25 @@ def parse_csv(file_path: Union[str, Path]) -> List[HGRecord]:
     return records
 
 
+def _detect_format(file_path: Path) -> str:
+    """Detect actual file format from magic bytes, fallback to extension."""
+    with open(file_path, "rb") as f:
+        header = f.read(4)
+    # XLSX/ZIP files start with PK\x03\x04
+    if header[:4] == b"PK\x03\x04":
+        return "xlsx"
+    # XLS (old Excel) starts with D0 CF 11 E0
+    if header[:4] == b"\xd0\xcf\x11\xe0":
+        return "xls"
+    # Otherwise treat as CSV
+    return "csv"
+
+
 def parse_file(file_path: Union[str, Path]) -> List[HGRecord]:
-    """Auto-detect file type and parse."""
+    """Auto-detect file type from content and parse."""
     path = Path(file_path)
-    ext = path.suffix.lower()
-    if ext in (".xlsx", ".xls"):
+    fmt = _detect_format(path)
+    if fmt in ("xlsx", "xls"):
         return parse_excel(path)
-    elif ext == ".csv":
-        return parse_csv(path)
     else:
-        raise ParseError(f"Unsupported file type: {ext}. Please upload .xlsx or .csv")
+        return parse_csv(path)
